@@ -1,0 +1,33 @@
+Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
+Copyright (c) 2026 ERA (https://era-ai-69zg.onrender.com). All rights reserved.
+This work and source code are licensed under the Creative Commons
+Attribution-NonCommercial 4.0 International License ("CC BY-NC 4.0").
+# ========================================================================
+SUMMARY OF LICENSE TERMS
+ 1. Permitted Uses (Non-Commercial Only):
+   You are free to copy, redistribute, inspect, modify, and self-host this
+   software strictly for personal, academic, educational, or non-commercial
+   evaluation purposes.
+ 2. Attribution (BY):
+   You must give appropriate credit to ERA (https://era-ai-69zg.onrender.com),
+   provide a link to this license (https://creativecommons.org/licenses/by-nc/4.0/),
+   and indicate if changes were made. You may do so in any reasonable manner,
+   but not in any way that suggests the licensor endorses you or your use.
+ 3. Strictly No Commercial Use (NC):
+   You may NOT use this software, source code, prompts, UI, or any derivative
+   works for commercial purposes. Specifically, you may NOT:
+   * Host, deploy, or offer this software as a paid or commercial SaaS, PaaS,
+     or managed service;
+   * Sell, license, sublicense, or monetize access to this software or any
+     derivative works;
+   * Use this software to provide paid commercial development or hosting
+     services to third parties without obtaining a separate written commercial
+     license from the copyright holder.
+ 4. No Warranties & Limitation of Liability:
+   This software is provided "AS IS", without warranty of any kind, express or
+   implied, as detailed in Section 5 of the Legal Code.
+# ========================================================================
+FULL LEGAL CODE
+The full Creative Commons Attribution-NonCommercial 4.0 International Legal Code
+is incorporated herein by reference and is available at:
+https://creativecommons.org/licenses/by-nc/4.0/legalcode.txt
