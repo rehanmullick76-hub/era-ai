@@ -21,7 +21,7 @@ Most AI website builders stop at static single-page HTML mockups. **ERA** is a f
 
 ## 🏗️ Monorepo Structure
 ```text
-era/
+era-ai/
 ├── artifacts/
 │   ├── era/                  # React 19 + Vite + Tailwind CSS v4 + Wouter frontend IDE
 │   │   ├── src/components/   # Builder IDE, code inspector, preview frame, sidebar
