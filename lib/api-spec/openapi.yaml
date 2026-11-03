@@ -1,0 +1,1180 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: ERA - AI Website Builder API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+  - name: auth
+  - name: credits
+  - name: projects
+  - name: files
+  - name: ai
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /auth/me:
+    get:
+      operationId: getAuthMe
+      tags: [auth]
+      summary: Get the current Google session or guest identity
+      responses:
+        "200":
+          description: Current identity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthMeResult"
+
+  /auth/google:
+    get:
+      operationId: startGoogleAuth
+      tags: [auth]
+      summary: Start Google sign-in using OAuth and PKCE
+      responses:
+        "302":
+          description: Redirect to Google authorization
+
+  /auth/google/callback:
+    get:
+      operationId: completeGoogleAuth
+      tags: [auth]
+      summary: Verify Google's OAuth callback and create an ERA session
+      responses:
+        "302":
+          description: Redirect to the requested ERA page
+
+  /auth/logout:
+    post:
+      operationId: logoutAuth
+      tags: [auth]
+      summary: Revoke the current Google session
+      responses:
+        "204":
+          description: Session revoked
+
+  /credits/create-order:
+    post:
+      operationId: createCreditOrder
+      tags: [credits]
+      summary: Create a Razorpay order for a server-priced credit package
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+                $ref: "#/components/schemas/CreateCreditOrderInput"
+      responses:
+        "200":
+          description: Razorpay Checkout order
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [orderId, amount, keyId]
+                properties:
+                  orderId: { type: string }
+                  amount: { type: integer }
+                  keyId: { type: string }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "502":
+          $ref: "#/components/responses/ServerError"
+
+  /credits/verify-payment:
+    post:
+      operationId: verifyCreditPayment
+      tags: [credits]
+      summary: Verify a captured Razorpay payment and credit its owner exactly once
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyCreditPaymentInput"
+      responses:
+        "200":
+          description: Verified payment and current balance
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [verified, credits]
+                properties:
+                  verified: { type: boolean }
+                  credits: { type: integer }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/BadRequest"
+        "502":
+          $ref: "#/components/responses/ServerError"
+
+  /projects:
+    get:
+      operationId: listProjects
+      tags: [projects]
+      summary: List all projects
+      responses:
+        "200":
+          description: Projects owned by the authenticated user
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Project"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createProject
+      tags: [projects]
+      summary: Create a new project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectInput"
+      responses:
+        "201":
+          description: Created project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /projects/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      operationId: getProject
+      tags: [projects]
+      summary: Get a project by ID
+      responses:
+        "200":
+          description: Project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteProject
+      tags: [projects]
+      summary: Delete a project
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /projects/{id}/files:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      operationId: listFiles
+      tags: [files]
+      summary: List all files in a project
+      responses:
+        "200":
+          description: Project files
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectFile"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      operationId: upsertFile
+      tags: [files]
+      summary: Create or update a file in a project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FileInput"
+      responses:
+        "200":
+          description: Saved file
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectFile"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /projects/{id}/files/{filePath}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - name: filePath
+        in: path
+        required: true
+        description: File path, including nested paths
+        schema:
+          type: string
+    delete:
+      operationId: deleteFile
+      tags: [files]
+      summary: Delete a file from a project
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /runtime/capabilities:
+    get:
+      operationId: getRuntimeCapabilities
+      tags: [projects]
+      responses:
+        "200":
+          description: Trial runtime availability
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuntimeCapabilities"
+  /projects/{id}/workspace:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      operationId: getWorkspace
+      tags: [projects]
+      responses:
+        "200":
+          description: Workspace state and sanitized logs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workspace"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      operationId: controlWorkspace
+      tags: [projects]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkspaceControl"
+      responses:
+        "202":
+          description: Persistent workspace operation queued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workspace"
+        "409":
+          $ref: "#/components/responses/BadRequest"
+  /projects/{id}/workspace/preview:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    post:
+      operationId: createWorkspacePreview
+      tags: [projects]
+      responses:
+        "200":
+          description: Short-lived private preview on a separate origin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkspacePreview"
+        "409":
+          $ref: "#/components/responses/BadRequest"
+  /ai/generate:
+    post:
+      operationId: aiGenerate
+      tags: [ai]
+      summary: Queue code generation using Gemini
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateInput"
+      responses:
+        "202":
+          description: Generation job accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerateJobAccepted"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          $ref: "#/components/responses/InsufficientCredits"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /ai/jobs/{jobId}:
+    get:
+      operationId: getAiJob
+      tags: [ai]
+      summary: Get the status and result of a generation job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Generation job status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiJobStatus"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /ai/chat:
+    post:
+      operationId: aiChat
+      tags: [ai]
+      summary: General chat with Gemini
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatInput"
+      responses:
+        "200":
+          description: Chat response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          $ref: "#/components/responses/InsufficientCredits"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /ai/read-attachments:
+    post:
+      operationId: aiReadAttachments
+      tags: [ai]
+      summary: Read attachments or answer a direct question about them
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiReadAttachmentsInput"
+      responses:
+        "200":
+          description: Extracted context or a direct answer to the supplied question
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiReadAttachmentsResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          $ref: "#/components/responses/InsufficientCredits"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /ai/test:
+    post:
+      operationId: aiTest
+      tags: [ai]
+      summary: Analyze code for bugs and issues
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TestInput"
+      responses:
+        "200":
+          description: Test result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          $ref: "#/components/responses/InsufficientCredits"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /ai/design:
+    post:
+      operationId: aiDesign
+      tags: [ai]
+      summary: Get design suggestions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DesignInput"
+      responses:
+        "200":
+          description: Design suggestions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DesignResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          $ref: "#/components/responses/InsufficientCredits"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /ai/plan:
+    post:
+      operationId: aiPlan
+      tags: [ai]
+      summary: Plan and architect a project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlanInput"
+      responses:
+        "200":
+          description: Project plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlanResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          $ref: "#/components/responses/InsufficientCredits"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /ai/security:
+    post:
+      operationId: aiSecurity
+      tags: [ai]
+      summary: Security scan code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SecurityInput"
+      responses:
+        "200":
+          description: Security scan result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SecurityResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          $ref: "#/components/responses/InsufficientCredits"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+components:
+  parameters:
+    ProjectId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    PayloadTooLarge:
+      description: Request payload is too large
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    InsufficientCredits:
+      description: Not enough credits
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    RateLimited:
+      description: Rate limited or daily quota exhausted
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ServerError:
+      description: Server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    SuccessResponse:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+
+    AuthMeResult:
+      type: object
+      required: [authenticated, userId, credits, authProvider, email, displayName, avatarUrl]
+      properties:
+        authenticated:
+          type: boolean
+        userId:
+          type: ["string", "null"]
+        credits:
+          type: integer
+          format: int32
+        authProvider:
+          type: ["string", "null"]
+          enum: [google, null]
+        email:
+          type: ["string", "null"]
+        displayName:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+
+    CreateCreditOrderInput:
+      type: object
+      required: [packageId]
+      properties:
+        packageId:
+          type: string
+          enum: [starter, pro, max]
+    VerifyCreditPaymentInput:
+      type: object
+      required: [razorpay_order_id, razorpay_payment_id, razorpay_signature]
+      properties:
+        razorpay_order_id: { type: string }
+        razorpay_payment_id: { type: string }
+        razorpay_signature: { type: string }
+    AddCreditsInput:
+      type: object
+      required: [amount]
+      properties:
+        amount:
+          type: integer
+          enum: [100, 500, 2000]
+
+    CreditsBalance:
+      type: object
+      required: [credits]
+      properties:
+        credits:
+          type: integer
+          format: int32
+          minimum: 0
+
+    Project:
+      type: object
+      required: [id, name, mode, createdAt, updatedAt]
+      properties:
+        mode:
+          type: string
+          enum: [frontend, fullstack]
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ProjectInput:
+      type: object
+      required: [name]
+      properties:
+        mode:
+          type: string
+          enum: [frontend, fullstack]
+          default: frontend
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+
+    ProjectFile:
+      type: object
+      required: [id, projectId, path, content, language, updatedAt]
+      properties:
+        id:
+          type: integer
+          format: int32
+        projectId:
+          type: string
+          format: uuid
+        path:
+          type: string
+        content:
+          type: string
+        language:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+
+    FileInput:
+      type: object
+      required: [path, content, language]
+      properties:
+        path:
+          type: string
+          minLength: 1
+        content:
+          type: string
+        language:
+          type: string
+
+    AiMessage:
+      type: object
+      required: [role, content]
+      properties:
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+
+    ChatInput:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          minLength: 1
+        history:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiMessage"
+        projectContext:
+          type: string
+          nullable: true
+
+    ChatResult:
+      type: object
+      required: [reply, model]
+      properties:
+        reply:
+          type: string
+        model:
+          type: string
+        searchStatus:
+          $ref: "#/components/schemas/GoogleSearchStatus"
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/GoogleSearchSource"
+
+    GoogleSearchStatus:
+      type: string
+      enum: [not_used, used, unavailable]
+
+    GoogleSearchSource:
+      type: object
+      required: [title, url]
+      properties:
+        title:
+          type: string
+        url:
+          type: string
+          format: uri
+
+    RuntimeCapabilities:
+      type: object
+      required: [configured, enabled, notice]
+      properties:
+        configured: { type: boolean }
+        enabled: { type: boolean }
+        notice: { type: string }
+    WorkspaceControl:
+      type: object
+      required: [action]
+      properties:
+        action: { type: string, enum: [start, stop, restart, rebuild, delete] }
+        confirmDataLoss: { type: boolean }
+    Workspace:
+      type: object
+      required: [projectId, state, phase, logs, revision, currentRevision, error, databaseState]
+      properties:
+        projectId: { type: string }
+        state:
+          type: string
+          enum: [unprovisioned, queued, provisioning, building, running, stopped, failed, deleting, deleted]
+        phase: { type: string }
+        logs: { type: string }
+        revision: { type: [string, "null"] }
+        currentRevision: { type: [string, "null"] }
+        error: { type: [string, "null"] }
+        databaseState: { type: string, enum: [unprovisioned, provisioned] }
+    WorkspacePreview:
+      type: object
+      required: [url, expiresAt]
+      properties:
+        url: { type: string, format: uri }
+        expiresAt: { type: string, format: date-time }
+    GenerateInput:
+      type: object
+      required: [prompt, projectId]
+      properties:
+        prompt:
+          type: string
+          minLength: 1
+        projectId:
+          type: string
+          format: uuid
+        files:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectFile"
+        history:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiMessage"
+
+    GeneratedFile:
+      type: object
+      required: [path, action]
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+        language:
+          type: string
+        action:
+          type: string
+          enum: [create, update, delete, patch]
+        edits:
+          type: array
+          items:
+            $ref: "#/components/schemas/GeneratedFileEdit"
+
+    GeneratedFileEdit:
+      type: object
+      required: [find, replace]
+      properties:
+        find:
+          type: string
+        replace:
+          type: string
+
+    GenerateResult:
+      type: object
+      required: [message, files, model]
+      properties:
+        message:
+          type: string
+        files:
+          type: array
+          items:
+            $ref: "#/components/schemas/GeneratedFile"
+        model:
+          type: string
+        inputTokens:
+          type: integer
+        outputTokens:
+          type: integer
+        creditsCharged:
+          type: integer
+          description: Actual credits charged for this generation. Omitted for jobs completed before token billing was enabled.
+        searchStatus:
+          $ref: "#/components/schemas/GoogleSearchStatus"
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/GoogleSearchSource"
+
+    GenerateJobAccepted:
+      type: object
+      required: [id, status, creditsRemaining]
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [queued, running]
+        creditsRemaining:
+          type: integer
+
+    AiJobStatus:
+      type: object
+      required: [id, projectId, status, stage, model, result, error, errorStatus, creditsRemaining]
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [queued, running, succeeded, failed]
+        stage:
+          type: string
+          enum: [queued, design, code, repair, fallback]
+          description: Current safe generation stage. Does not include prompts or request contents.
+        model:
+          type: [string, "null"]
+          description: Currently attempted Gemini model identifier, when available.
+        result:
+          oneOf:
+            - $ref: "#/components/schemas/GenerateResult"
+            - type: "null"
+        error:
+          type: ["string", "null"]
+        errorStatus:
+          type: ["integer", "null"]
+        creditsRemaining:
+          type: integer
+
+    TestInput:
+      type: object
+      required: [files]
+      properties:
+        files:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectFile"
+        focusFile:
+          type: string
+          nullable: true
+
+    TestIssue:
+      type: object
+      required: [file, severity, message, suggestion]
+      properties:
+        file:
+          type: string
+        line:
+          type: integer
+          nullable: true
+        severity:
+          type: string
+          enum: [error, warning, info]
+        message:
+          type: string
+        suggestion:
+          type: string
+
+    TestResult:
+      type: object
+      required: [issues, summary, model]
+      properties:
+        issues:
+          type: array
+          items:
+            $ref: "#/components/schemas/TestIssue"
+        summary:
+          type: string
+        model:
+          type: string
+
+    DesignInput:
+      type: object
+      required: [description]
+      properties:
+        description:
+          type: string
+          minLength: 1
+        currentFiles:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectFile"
+        style:
+          type: string
+          nullable: true
+
+    DesignResult:
+      type: object
+      required: [suggestions, colorPalette, typography, model]
+      properties:
+        suggestions:
+          type: string
+        colorPalette:
+          type: array
+          items:
+            type: string
+        typography:
+          type: string
+        model:
+          type: string
+
+    PlanInput:
+      type: object
+      required: [description]
+      properties:
+        projectId: { type: string, format: uuid }
+        description:
+          type: string
+          minLength: 1
+        projectType:
+          type: string
+
+    AiBinaryAttachmentInput:
+      type: object
+      required: [fileName, mimeType, data]
+      properties:
+        fileName:
+          type: string
+          minLength: 1
+          maxLength: 160
+        mimeType:
+          type: string
+          enum: [image/jpeg, image/png, image/webp, application/pdf]
+        data:
+          type: string
+          minLength: 4
+          maxLength: 6000000
+          description: Base64-encoded attachment, sent only for in-memory AI analysis.
+
+    AiReadAttachmentsInput:
+      type: object
+      required: [attachments]
+      properties:
+        attachments:
+          type: array
+          minItems: 1
+          maxItems: 4
+          items:
+            $ref: "#/components/schemas/AiBinaryAttachmentInput"
+        question:
+          type: string
+          maxLength: 10000
+          description: Optional direct question to answer from the attachments instead of summarizing them for a build request.
+        referenceText:
+          type: string
+          maxLength: 7000
+          description: Optional text/code file contents to consider alongside the binary attachments.
+
+    AiReadAttachmentsResult:
+      type: object
+      required: [context, model, inputTokens, outputTokens, creditsCharged]
+      properties:
+        context:
+          type: string
+          maxLength: 6000
+          description: Extracted context, or the direct answer when question is supplied.
+        model:
+          type: string
+        inputTokens:
+          type: integer
+        outputTokens:
+          type: integer
+        creditsCharged:
+          type: integer
+
+    PlannedFile:
+      type: object
+      required: [path, description, language]
+      properties:
+        path:
+          type: string
+        description:
+          type: string
+        language:
+          type: string
+
+    PlanResult:
+      type: object
+      required: [plan, files, techStack, model]
+      properties:
+        plan:
+          type: string
+        files:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlannedFile"
+        techStack:
+          type: array
+          items:
+            type: string
+        model:
+          type: string
+        searchStatus:
+          $ref: "#/components/schemas/GoogleSearchStatus"
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/GoogleSearchSource"
+
+    SecurityInput:
+      type: object
+      required: [files]
+      properties:
+        files:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectFile"
+
+    SecurityVuln:
+      type: object
+      required: [file, severity, type, message, fix]
+      properties:
+        file:
+          type: string
+        line:
+          type: integer
+          nullable: true
+        severity:
+          type: string
+          enum: [critical, high, medium, low, info]
+        type:
+          type: string
+        message:
+          type: string
+        fix:
+          type: string
+
+    SecurityResult:
+      type: object
+      required: [vulnerabilities, score, summary, model]
+      properties:
+        vulnerabilities:
+          type: array
+          items:
+            $ref: "#/components/schemas/SecurityVuln"
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+        summary:
+          type: string
+        model:
+          type: string

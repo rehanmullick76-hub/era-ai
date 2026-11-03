@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "ERA - AI Website Builder"
+version = "1.0.0"
+id = "artifacts/era"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 5173
+
+[services.development]
+run = "PORT=5173 BASE_PATH=/ pnpm --filter @workspace/era run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/era", "run", "build" ]
+publicDir = "artifacts/era/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "5173"
+BASE_PATH = "/"

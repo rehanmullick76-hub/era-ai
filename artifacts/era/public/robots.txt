@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://era-ai-69zg.onrender.com/sitemap.xml
