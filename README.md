@@ -120,7 +120,7 @@ If you want to build and preview full-stack apps immediately without configuring
 ```bash
 # 1. Clone the repository
 git clone https://github.com/rehanmullick76-hub/era-ai.git
-cd era
+cd era-ai
 # 2. Install monorepo dependencies
 pnpm install
 # 3. Configure your environment variables
